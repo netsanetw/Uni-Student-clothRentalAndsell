@@ -1,0 +1,224 @@
+Here's a solid folder structure for this system, based on the Django + DRF backend and React + Vite frontend described in your SRS. I'll explain the reasoning behind each part.
+
+## Overall repo layout
+
+```
+attire-rental-system/
+├── backend/                 # Django project
+├── frontend/                # React project
+├── docker-compose.yml        # Orchestrates backend, frontend, db, redis
+├── .env.example
+├── .gitignore
+└── README.md
+```
+
+**Why separate top-level folders:** Your SRS specifies a decoupled client-server architecture (React frontend talking to a Django REST API). Keeping them as siblings (rather than nesting one inside the other) means each can have its own dependency management, Docker build, and CI pipeline without interfering with the other — and it maps directly to your two-container Docker Compose setup.
+
+---
+
+## Backend (Django)
+
+```
+backend/
+├── config/                      # Project-level settings, not app logic
+│   ├── settings/
+│   │   ├── base.py
+│   │   ├── development.py
+│   │   ├── production.py
+│   ├── urls.py                  # Root URL routing, includes each app's urls
+│   ├── wsgi.py
+│   └── asgi.py
+│
+├── apps/
+│   ├── users/                    # FR1 — Authentication & User Management
+│   │   ├── models.py             # User, Student, Vendor profile fields
+│   │   ├── serializers.py
+│   │   ├── views.py
+│   │   ├── urls.py
+│   │   ├── permissions.py        # Role-based access (Student/Vendor/Admin)
+│   │   └── tests/
+│   │
+│   ├── verification/             # FR1.2 — Student Verification Module
+│   │   ├── models.py             # University ID uploads, verification status
+│   │   ├── serializers.py
+│   │   ├── views.py
+│   │   └── tests/
+│   │
+│   ├── vendors/                  # FR2 — Vendor Management
+│   │   ├── models.py             # Business info, approval status
+│   │   ├── serializers.py
+│   │   ├── views.py
+│   │   └── tests/
+│   │
+│   ├── products/                 # FR3, FR6 — Product Catalog & Search
+│   │   ├── models.py             # Product, Category
+│   │   ├── serializers.py
+│   │   ├── views.py               # includes filtering/search logic
+│   │   ├── filters.py
+│   │   └── tests/
+│   │
+│   ├── reservations/             # FR4 — Reservation & Rental Management
+│   │   ├── models.py             # Reservation, Rental
+│   │   ├── serializers.py
+│   │   ├── views.py
+│   │   ├── services.py           # double-booking prevention, availability checks
+│   │   └── tests/
+│   │
+│   ├── orders/                   # FR5 — Purchase & Order Management
+│   │   ├── models.py             # Order
+│   │   ├── serializers.py
+│   │   ├── views.py
+│   │   └── tests/
+│   │
+│   ├── payments/                 # FR5 — Payment processing
+│   │   ├── models.py             # Payment, transaction records
+│   │   ├── gateway.py            # External payment gateway integration
+│   │   ├── views.py
+│   │   └── tests/
+│   │
+│   ├── discounts/                 # Student discount & promotion logic
+│   │   ├── models.py
+│   │   ├── services.py
+│   │   └── tests/
+│   │
+│   ├── reviews/                   # FR7 — Reviews & Ratings
+│   │   ├── models.py
+│   │   ├── serializers.py
+│   │   ├── views.py
+│   │   └── tests/
+│   │
+│   ├── notifications/             # FR8 — Notification Management
+│   │   ├── models.py
+│   │   ├── services.py           # in-app + email dispatch
+│   │   ├── tasks.py               # Celery async sending
+│   │   └── tests/
+│   │
+│   └── reports/                   # FR9 — Dashboard & Reporting
+│       ├── views.py               # aggregated stats per role
+│       ├── serializers.py
+│       └── tests/
+│
+├── common/                        # Shared utilities across apps
+│   ├── permissions.py
+│   ├── pagination.py
+│   ├── exceptions.py
+│   └── validators.py
+│
+├── media/                         # Uploaded images (product photos, IDs)
+├── static/
+├── requirements/
+│   ├── base.txt
+│   ├── dev.txt
+│   └── prod.txt
+├── manage.py
+└── Dockerfile
+```
+
+**Why an `apps/` folder split by domain (not by layer):** Each of your functional requirements (FR1–FR9) maps to a distinct business capability with its own models, serializers, and views. Splitting Django apps this way — one app per bounded concern (users, vendors, products, reservations, orders, payments, reviews, notifications, reports) — keeps each module independently testable and makes it obvious where new logic belongs as the system grows. It also mirrors your ER diagram (User, Vendor, Product, Reservation, Rental, Order, Payment, Review) almost one-to-one.
+
+**Why `config/` is separate from `apps/`:** Settings, URL routing, and WSGI/ASGI entry points are project-wide concerns, not business logic. Isolating them avoids circular-import headaches and makes environment-specific settings (dev/prod) easy to swap — important since your NFRs call out separate performance/security postures per environment.
+
+**Why `services.py` files inside some apps:** Requirements like "prevent double-booking" (FR4) or "apply student discount" (FR5) are business rules that don't belong in views or serializers directly. Pulling this logic into a `services.py` keeps views thin and makes the rules unit-testable in isolation — useful given your data-integrity requirements in section 6.4.
+
+**Why `common/`:** Role-based permissions (Student/Vendor/Admin) and pagination are used by nearly every app. Centralizing them avoids duplicating access-control logic, which matters a lot for a system with three distinct user roles and strict RBAC requirements (section 9, Security).
+
+**Why `requirements/` split by environment:** Keeps production lean (no dev/test tooling) while still letting local development install linters, pytest, etc.
+
+---
+
+## Frontend (React + Vite)
+
+```
+frontend/
+├── src/
+│   ├── api/                     # Axios instance + endpoint calls
+│   │   ├── axiosClient.js
+│   │   ├── authApi.js
+│   │   ├── productsApi.js
+│   │   ├── reservationsApi.js
+│   │   ├── ordersApi.js
+│   │   ├── paymentsApi.js
+│   │   └── reviewsApi.js
+│   │
+│   ├── components/               # Reusable, presentation-only UI
+│   │   ├── common/                # Buttons, Modals, Inputs, Loaders
+│   │   ├── product/               # ProductCard, ProductGrid, Filters
+│   │   ├── dashboard/              # Shared dashboard widgets
+│   │   └── layout/                 # Navbar, Sidebar, Footer
+│   │
+│   ├── pages/                     # Route-level views (matches Section 8 UI list)
+│   │   ├── auth/
+│   │   │   ├── LoginPage.jsx
+│   │   │   └── RegisterPage.jsx
+│   │   ├── student/
+│   │   │   ├── StudentDashboard.jsx
+│   │   │   ├── ProductCatalog.jsx
+│   │   │   ├── ProductDetails.jsx
+│   │   │   ├── ReservationPage.jsx
+│   │   │   └── CheckoutPage.jsx
+│   │   ├── vendor/
+│   │   │   ├── VendorDashboard.jsx
+│   │   │   ├── ProductManagement.jsx
+│   │   │   └── InventoryManagement.jsx
+│   │   ├── admin/
+│   │   │   ├── AdminDashboard.jsx
+│   │   │   ├── UserManagement.jsx
+│   │   │   └── VendorApprovals.jsx
+│   │   └── shared/
+│   │       └── ProfilePage.jsx
+│   │
+│   ├── context/                    # Auth state, role-based routing state
+│   │   └── AuthContext.jsx
+│   │
+│   ├── hooks/                      # Custom hooks (useAuth, useFetch, etc.)
+│   │
+│   ├── routes/                     # React Router config, protected routes
+│   │   ├── AppRoutes.jsx
+│   │   └── ProtectedRoute.jsx
+│   │
+│   ├── utils/                      # Formatters, validators, constants
+│   │
+│   ├── assets/                     # Images, icons, static files
+│   │
+│   ├── App.jsx
+│   └── main.jsx
+│
+├── public/
+├── index.html
+├── vite.config.js
+├── tailwind.config.js
+├── package.json
+└── Dockerfile
+```
+
+**Why `pages/` is split by role (student/vendor/admin):** Section 8 of your SRS lists distinct dashboards and pages per user class. Since permissions and navigation differ sharply by role, grouping pages this way keeps route-protection logic simple and matches how a developer would mentally navigate "what does a vendor see" vs "what does a student see."
+
+**Why `api/` is separated from `components/`:** Keeps network/data-fetching logic out of UI components entirely, so components stay reusable and testable with mock data, and API changes (e.g., swapping Axios config or endpoint paths) don't ripple through the UI layer.
+
+**Why `context/` for auth:** JWT-based auth with three roles means the whole app needs to know "who is logged in and what can they do." A single AuthContext avoids prop-drilling this through every page.
+
+**Why `routes/ProtectedRoute.jsx`:** Your RBAC requirement (Section 9) needs enforcement on both backend and frontend — the frontend guard just prevents unauthorized users from *seeing* pages they shouldn't, complementing the backend's actual enforcement.
+
+---
+
+## Infrastructure / root-level
+
+```
+attire-rental-system/
+├── docker-compose.yml
+│   services: backend, frontend, postgres, redis (optional), celery (optional)
+├── nginx/                     # optional reverse proxy config for production
+└── docs/
+    ├── diagrams/               # Use case, sequence, activity diagrams from Section 4
+    └── api-docs/               # OpenAPI/Swagger spec
+```
+
+**Why Docker Compose at the root:** Your architecture (Section 5.2) explicitly calls out Docker/Docker Compose as the infrastructure layer, coordinating Django, React, PostgreSQL, and optionally Redis/Celery (needed for FR8's async notification delivery) as one reproducible local/prod environment.
+
+**Why a `docs/diagrams/` folder:** Section 4 references several diagrams (context, use case, activity, sequence) that should live versioned alongside the code rather than only in the SRS document, so they stay in sync as the system evolves.
+
+---
+
+If you want, I can turn this into an actual scaffolded starter repo (empty files/folders you can `git init` and build from) — just let me know if you'd like the backend, frontend, or both generated as real files.
+
+make  documentationbased on this that i will create
