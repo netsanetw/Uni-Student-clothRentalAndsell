@@ -1,0 +1,27 @@
+# Python/Django
+__pycache__/
+*.py[cod]
+*$py.class
+*.env
+db.sqlite3
+media/
+static/
+backend/static/
+backend/media/
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Node/React
+node_modules/
+dist/
+dist-ssr/
+*.local
+.eslintcache
+
+# Logs & OS files
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
