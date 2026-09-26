@@ -1,0 +1,223 @@
+Here is a complete, structured **QA & Software Testing Documentation Suite** tailored for software development projects, including modern web applications built on stacks like React and Django.
+
+---
+
+## 1. Test Plan Template
+
+```markdown
+# Test Plan: [Project Name]
+
+**Document Version:** 1.0  
+**Date:** [Date]  
+**Author:** QA Lead / Engineer  
+**Target Release:** v1.0.0  
+
+---
+
+### 1. Scope of Testing
+* **In-Scope:**
+  * Authentication & Authorization (JWT, RBAC)
+  * Core Business Logic (e.g., Reservation, Checkout, Double-Booking Prevention)
+  * Frontend UI/UX across target viewports (Desktop, Mobile)
+  * API Integration & Endpoints (REST)
+* **Out-of-Scope:**
+  * Third-party payment gateway internal mechanics
+  * Server load testing beyond 5,000 concurrent users
+
+---
+
+### 2. Testing Strategy & Levels
+| Level | Scope / Description | Tools Used |
+| :--- | :--- | :--- |
+| **Unit Testing** | Individual functions, Django models, React components | PyTest, Jest |
+| **Integration Testing** | API endpoints, DB transactions, Axios interceptors | DRF APITestCase, Postman |
+| **E2E Testing** | User journeys (Registration $\rightarrow$ Checkout) | Playwright / Cypress |
+| **UI/UX & Compatibility** | Cross-browser and responsive layout testing | Chrome DevTools, Safari |
+| **Security Testing** | RBAC permission bypass, SQLi, XSS, Token Expiry | OWASP ZAP, Postman |
+
+---
+
+### 3. Entry & Exit Criteria
+* **Entry Criteria:**
+  * Feature branch merged to Staging environment.
+  * Unit test coverage $\ge 80\%$.
+  * All database migrations executed successfully without errors.
+* **Exit Criteria:**
+  * 0 Critical / Blocker bugs open.
+  * $100\%$ execution of high-priority manual/automated test cases.
+  * All core API endpoints returning expected status codes under standard load.
+
+---
+
+### 4. Test Deliverables
+* Test Cases Repository
+* Execution Logs & Playwright Trace Files
+* Bug Reports & Severity Matrix
+* Final QA Sign-off Report
+
+```
+
+---
+
+## 2. Standard Test Case Template
+
+Use this format in spreadsheet tools (Excel, Google Sheets) or test management software (TestRail, Jira Xray).
+
+| Field | Description / Example |
+| --- | --- |
+| **Test Case ID** | `TC_RENTAL_001` |
+| **Feature / Subsystem** | Reservation & Availability Engine |
+| **Title** | Prevent double-booking for overlapping rental dates when stock = 1 |
+| **Preconditions** | Item ID `101` has `available_stock = 1`. Reservation `R1` exists for Oct 10–13 (Status: `APPROVED`). |
+| **Test Priority** | **High / Critical** |
+| **Test Type** | Functional / Integration |
+
+### Execution Steps & Results
+
+```markdown
+### Steps to Reproduce:
+1. Log in as a verified Student user.
+2. Navigate to product page for Product ID 101.
+3. Open the reservation date picker.
+4. Select start date: Oct 11, end date: Oct 14 (Overlaps with R1).
+5. Click "Reserve Rental".
+
+### Expected Result:
+* API returns HTTP status `409 Conflict`.
+* Response body contains error message: `"Product is fully booked for the selected dates."`
+* No record is inserted into the `rentals_reservation` table.
+* UI displays an error toast informing the user to pick different dates.
+
+### Actual Result:
+* [Pass / Fail status during execution]
+
+### Post-Conditions:
+* Available inventory count remains unchanged.
+
+```
+
+---
+
+## 3. Bug / Defect Report Template
+
+Use this format when submitting bug tickets in Jira, GitHub Issues, or Trello.
+
+```markdown
+## [BUG] Overlapping rental reservation succeeds when stock is fully booked
+
+**Severity:** Blocker / Critical  
+**Priority:** High  
+**Environment:** Staging (Docker / PostgreSQL 16 / React 19 / Django 5.x)  
+**Browser / Device:** Chrome v128 (Desktop)  
+**Reporter:** [Tester Name]  
+
+---
+
+### Description
+When two users submit a reservation request for the same physical product for overlapping date ranges simultaneously, both reservations are marked as `PENDING`/`APPROVED`, causing a negative physical stock condition.
+
+---
+
+### Steps to Reproduce
+1. Log in as `Student_A`.
+2. Select Product `ID: 101` (Total Available Stock = 1).
+3. Book dates: `2026-10-10` to `2026-10-15`.
+4. Log in as `Student_B` in a separate session.
+5. Book the same Product `ID: 101` for dates `2026-10-12` to `2026-10-14`.
+6. Submit both checkout requests.
+
+---
+
+### Expected Behavior
+`Student_B`'s booking request should fail with a `409 Conflict` error code and prevent duplicate booking.
+
+### Actual Behavior
+Both reservations receive `201 Created` status codes. The database records two active reservations for a single physical unit.
+
+---
+
+### Supporting Artifacts
+* **Console Logs / API Response:**
+  ```json
+  // Request 2 Response (Unexpected 201)
+  {
+    "reservation_id": 102,
+    "status": "PENDING",
+    "total_amount": "90.00"
+  }
+
+```
+
+* **Screenshots / Trace:** `[Attach Playwright Trace / Screen Recording]`
+
+---
+
+### Suggested Fix
+
+Wrap the reservation availability check inside `transaction.atomic()` with `select_for_update()` on the target product row in Django to lock the record during date-overlap calculation.
+
+```
+
+---
+
+## 4. Playwright E2E Automation Test Template (JavaScript/TypeScript)
+
+If you are using automated frameworks like **Playwright**, here is a clean template pattern:
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test.describe('Student Reservation Flow', () => {
+  test.beforeEach(async ({ page }) => {
+    // 1. Authenticate & load base page
+    await page.goto('http://localhost/login');
+    await page.fill('input[name="email"]', 'student@univ.edu');
+    await page.fill('input[name="password"]', 'SecretPassword123');
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL('http://localhost/catalog');
+  });
+
+  test('TC_RENTAL_001: Successfully create a rental reservation draft', async ({ page }) => {
+    // 2. Select product
+    await page.click('text="Traditional Habesha Dress"');
+    await expect(page.locator('h1')).toContainText('Traditional Habesha Dress');
+
+    // 3. Select Date Range
+    await page.fill('input[name="start_date"]', '2026-10-20');
+    await page.fill('input[name="end_date"]', '2026-10-23');
+
+    // 4. Submit Reservation
+    await page.click('button:has-text("Reserve Rental")');
+
+    // 5. Assertions
+    const successToast = page.locator('.toast-success');
+    await expect(successToast).toBeVisible();
+    await expect(successToast).toContainText('Reservation request submitted');
+  });
+});
+
+```
+
+---
+
+## 5. QA Sign-Off Checklist Template
+
+```markdown
+# QA Release Sign-off
+
+**Project:** University Attire Rental Platform  
+**Release Candidate:** v1.0.0-RC2  
+**Date:** September 2026  
+
+### Pre-Release Verification
+- [ ] All automated unit & integration tests passing (100% pass rate).
+- [ ] Playwright E2E regression suite executed against Staging build.
+- [ ] No Critical or High severity defects remain open.
+- [ ] Authentication, JWT token refresh, and RBAC permission guards verified.
+- [ ] Database migrations tested against a copy of production data.
+- [ ] API endpoints returning response times $< 200\text{ms}$.
+
+**QA Lead Approval Signature:** ___________________________  
+**Date:** ____ / ____ / ________
+
+```

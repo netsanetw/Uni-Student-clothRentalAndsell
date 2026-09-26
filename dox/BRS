@@ -1,0 +1,132 @@
+# Business Requirements Document (BRD)
+
+## 1. Introduction
+
+### Project Name
+
+**University Ceremony Attire Rental & Marketplace System**
+
+### Purpose
+
+The purpose of this Business Requirements Document (BRD) is to define the high-level business needs, operational scope, stakeholder expectations, and success criteria for the University Ceremony Attire Rental & Marketplace System. This document serves as a bridge between business stakeholders (vendors, students, university event coordinators) and technical teams to ensure the final digital solution aligns with real-world operational goals.
+
+### Background
+
+Currently, university students face significant friction when sourcing appropriate formal, traditional, and ceremonial attire for major campus milestones—such as graduation ceremonies, departmental events, formal presentations, and cultural celebrations. Students often struggle to locate suitable outfits, compare prices across multiple stores, access student discounts, and secure item reservations in advance.
+
+On the supply side, independent clothing designers, boutiques, and formal wear rental vendors lack a targeted, centralized channel to showcase their inventories, run student-focused promotions, manage active rentals, and track stock. By transitioning from fragmented, offline processes to a centralized digital marketplace, this system standardizes product discovery, inventory control, verified discount delivery, and order processing.
+
+---
+
+## 2. Business Objectives
+
+### What problem are we solving?
+
+* **High Discovery & Transaction Friction for Students:** Lack of a single platform to search, compare, reserve, or purchase formal and cultural attire specifically tailored for university events.
+* **Inaccessible & Unverified Student Discounts:** Inability for boutique vendors to reliably verify student eligibility before granting promotional rates or exclusive rental terms.
+* **Operational Inefficiencies for Vendors:** Manual inventory tracking, double-booking risks during peak graduation seasons, and limited marketing reach outside local walk-in traffic.
+* **Unstructured Rental & Order Workflows:** Lack of transparent tracking for rental reservation timelines, item returns, payment receipts, and customer-vendor communication.
+
+### Why is this project needed?
+
+* **Market Aggregation:** It bridges the gap between university event schedules and local fashion/rental ecosystems.
+* **Revenue & Growth for Vendors:** Provides local fashion designers, boutiques, and rental providers with a direct, recurring digital sales and rental channel targeted at higher-education students.
+* **Cost Efficiency for Students:** Lowers the financial barrier of attending formal university events by providing accessible rental options and verified student discounts.
+* **Operational Automation:** Automates stock availability checks, reservation approvals, payment tracking, and return reminders to prevent operational bottlenecks during peak graduation periods.
+
+---
+
+## 3. Scope
+
+### What is included
+
+* **Multi-Role User Portals:** Tailored web interfaces for Students, Vendors/Designers, and Platform Administrators.
+* **Student Identity Verification:** Account verification mechanism via university identification credentials to unlock student-exclusive offers.
+* **Comprehensive Product Catalog & Discovery:** Support for traditional wear, formal wear, university ceremony wear, accessories, and complete outfit bundles, equipped with dynamic search, filtering, and sorting.
+* **Reservation & Rental Management Workflow:** Real-time stock checks, rental scheduling, reservation approvals/cancellations, return tracking, and double-booking prevention.
+* **E-Commerce & Purchase Workflow:** Direct item purchasing, package bundle offers, and verified student discount application.
+* **Integrated Payment Processing:** Secure online payment processing, digital invoice generation, and transaction recording.
+* **Vendor Operations Hub:** Inventory tracking, catalog management, reservation/order fulfillment, revenue summaries, and performance analytics.
+* **Platform Governance & Admin Panel:** User and vendor approvals, platform-wide transaction oversight, category management, and reporting dashboards.
+* **Automated Notifications & Feedback:** Email and in-system alerts for order updates, return reminders, along with customer rating and review modules.
+
+### What is NOT included
+
+* **Physical Logistics & Delivery Fleet Management:** Handled directly by vendors or walk-in customer pickups/returns.
+* **Tailoring & Garment Manufacturing Operations:** Custom alteration tracking or manufacturing supply chain management.
+* **University Academic Systems Integration:** Direct API synchronization with university registrar databases or student academic portals.
+* **External Social Media Marketing Automation:** Automated posting or external ad campaign management beyond platform notifications.
+* **Full Financial Accounting Software:** Enterprise accounting features beyond basic transactional payment processing, revenue summary reports, and invoicing.
+
+---
+
+## 4. Stakeholders
+
+| Stakeholder Role | Description & Interest |
+| --- | --- |
+| **Students (Customers)** | Primary end-users who verify their university credentials, search catalog items, apply discounts, reserve or purchase attire, process payments, and leave feedback. |
+| **Vendors / Designers** | Business users (boutiques, individual designers, rental shops) who list products, set rental/purchase pricing, manage inventory, process reservations, and analyze sales. |
+| **Platform Administrators** | Governance team responsible for vetting vendor applications, managing platform users, enforcing operational policies, resolving disputes, and viewing systemic analytics. |
+| **Payment Gateway Providers** | Third-party financial processors responsible for handling secure online payment transactions and returning verification status. |
+| **Project Sponsor / Owner** | Entity initiating the platform development to capture marketplace fees, drive local commerce, and digitize ceremony attire rental operations. |
+
+---
+
+## 5. Business Requirements
+
+### BR1: User Account & Identity Management
+
+* **BR1.1:** The system shall enable users to register, authenticate, and manage profiles based on assigned roles (Student, Vendor, Administrator).
+* **BR1.2:** The system shall enforce student verification via university ID credentials to restrict student discounts exclusively to eligible users.
+* **BR1.3:** The system shall enable administrators to review, approve, suspend, or deactivate user and vendor accounts.
+
+### BR2: Vendor & Catalog Management
+
+* **BR2.1:** The system shall allow registered vendors to create, update, and manage business profiles and product catalogs.
+* **BR2.2:** The system shall support multi-category product listings (Traditional, Formal, University Ceremony Wear, Accessories, and Package Offers) with custom pricing for both rental and direct purchase options.
+* **BR2.3:** The system shall dynamically update and track vendor inventory quantities to reflect active rentals, sales, and reserved stock.
+
+### BR3: Product Discovery & Marketplace Operations
+
+* **BR3.1:** The system shall allow students to search, filter, and compare products based on category, price, size, vendor, and availability type (rental vs. purchase).
+* **BR3.2:** The system shall process reservation requests by verifying real-time product availability for selected rental date windows to eliminate double-booking.
+
+### BR4: Order Fulfillment & Financial Transactions
+
+* **BR4.1:** The system shall process online payments securely for purchases and rentals through integrated payment gateways.
+* **BR4.2:** The system shall automatically calculate order totals, apply verified student discounts, and issue downloadable digital receipts/invoices.
+* **BR4.3:** The system shall support a structured rental return workflow, allowing vendors to confirm item returns, assess item condition, and release updated inventory back to the active catalog.
+
+### BR5: Communication & Platform Governance
+
+* **BR5.1:** The system shall send automated notifications (in-app and email) to users regarding reservation updates, payment status, return reminders, and vendor approvals.
+* **BR5.2:** The system shall allow students to submit ratings and reviews for products and vendors following completed transactions.
+* **BR5.3:** The system shall provide business reporting dashboards for vendors (sales, rental performance, revenue summaries) and administrators (total transactions, active users, platform growth).
+
+---
+
+## 6. Assumptions
+
+* **Connectivity & Access:** End-users (students, vendors, admins) have stable internet access and access to modern desktop or mobile web browsers.
+* **Identity Verification Assets:** Students possess valid university identification documents or university email credentials required for verification.
+* **Vendor Operational Readiness:** Vendors provide accurate product photos, descriptions, stock counts, and pricing, and are capable of managing garment pickup and return logistics.
+* **External Gateway Reliability:** Third-party payment gateways maintain high uptime and provide reliable callback APIs for order verification.
+
+---
+
+## 7. Constraints
+
+* **Third-Party Dependency:** Payment settlement and processing speeds rely entirely on external payment gateway availability and SLA constraints.
+* **Conditional Discounts:** Student-exclusive pricing models cannot be granted without completed identity verification.
+* **Scope Limits:** Delivery management, order shipment logistics, and garment alteration tracking are strictly excluded from system automation in Version 1.0.
+* **Browser & Platform Constraints:** The system must function entirely as a responsive web application without requiring dedicated desktop client installations.
+
+---
+
+## 8. Success Criteria
+
+* **User Verification Efficiency:** At least 85% of student verification requests processed and validated within 24 hours of document submission.
+* **Inventory Accuracy & Booking Reliability:** Zero double-booking errors for rental items during peak university event windows.
+* **Marketplace Onboarding:** Onboarding a minimum threshold of verified local vendors and fashion designers within the first launch phase.
+* **Transaction Completion Rate:** Achieving a successful checkout completion rate (purchases and approved reservations) of over 90% for initiated transactions.
+* **Platform Adoption & Satisfaction:** Attaining positive overall feedback (average rating above 4.0/5.0) from both student renters and business vendors within the initial semester of operation.

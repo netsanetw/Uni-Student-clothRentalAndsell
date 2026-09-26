@@ -12,6 +12,10 @@ import CatalogPage from '../pages/student/CatalogPage'
 import VendorDashboard from '../pages/vendor/VendorDashboard'
 import AdminDashboard from '../pages/admin/AdminDashboard'
 
+// Telegram Mini-App Imports
+import MiniAppHome from '../pages/miniapp/MiniAppHome'
+import MiniAppCheckout from '../pages/miniapp/MiniAppCheckout'
+
 const NotFound = () => (
   <div className="py-20 text-center space-y-4">
     <h1 className="text-4xl font-headline font-bold text-primary">404 - Page Not Found</h1>
@@ -21,48 +25,61 @@ const NotFound = () => (
 
 const AppRoutes = () => {
   return (
-    <MainLayout>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/student/catalog" element={<CatalogPage />} />
+    <Routes>
+      {/* Dedicated Telegram Mini-App Routes (Without Main Website Layout) */}
+      <Route path="/miniapp" element={<MiniAppHome />} />
+      <Route path="/miniapp/checkout" element={<MiniAppCheckout />} />
 
-        {/* Student Protected Routes */}
-        <Route
-          path="/student"
-          element={
-            <ProtectedRoute allowedRoles={['STUDENT']}>
-              <StudentDashboard />
-            </ProtectedRoute>
-          }
-        />
+      {/* Web App Routes Wrapped in MainLayout */}
+      <Route
+        path="*"
+        element={
+          <MainLayout>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/student/catalog" element={<CatalogPage />} />
 
-        {/* Vendor Protected Routes */}
-        <Route
-          path="/vendor"
-          element={
-            <ProtectedRoute allowedRoles={['VENDOR']}>
-              <VendorDashboard />
-            </ProtectedRoute>
-          }
-        />
+              {/* Student Protected Routes */}
+              <Route
+                path="/student"
+                element={
+                  <ProtectedRoute allowedRoles={['STUDENT']}>
+                    <StudentDashboard />
+                  </ProtectedRoute>
+                }
+              />
 
-        {/* Admin Protected Routes */}
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute allowedRoles={['ADMIN']}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
+              {/* Vendor Protected Routes */}
+              <Route
+                path="/vendor"
+                element={
+                  <ProtectedRoute allowedRoles={['VENDOR']}>
+                    <VendorDashboard />
+                  </ProtectedRoute>
+                }
+              />
 
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </MainLayout>
+              {/* Admin Protected Routes */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute allowedRoles={['ADMIN']}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </MainLayout>
+        }
+      />
+    </Routes>
   )
 }
 
 export default AppRoutes
+

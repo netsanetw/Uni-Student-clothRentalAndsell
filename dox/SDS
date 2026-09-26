@@ -1,0 +1,399 @@
+design--https://stitch.withgoogle.com/projects/15843241110595089424
+
+This is a complete, production-ready System Design Specification (SDS) for the University Ceremony Attire Rental & Marketplace System.
+
+System Design Specification (SDS)
+University Ceremony Attire Rental & Marketplace System
+
+Document Version: 1.0
+
+Date: September 2026
+
+System Stack: React 19, Vite, Tailwind CSS, Django 5.x, Django REST Framework (DRF), PostgreSQL, Docker
+
+1. Introduction
+1.1 Purpose
+The System Design Specification (SDS) defines the complete technical architecture, subsystem designs, database models, frontend component structures, and API contracts for the University Ceremony Attire Rental & Marketplace System. This document serves as the technical blueprint for software engineers, backend developers, UI/UX engineers, and system administrators during implementation and deployment.
+
+1.2 System Overview
+The system is a decoupled, three-tier web application designed to connect university students with local apparel designers, boutiques, and formal wear rental vendors.
+
+Presentation Layer: A responsive Single Page Application (SPA) built with React 19, Vite, and Tailwind CSS.
+
+Application Layer: A RESTful API built on Python 3.12, Django 5.x, and Django REST Framework (DRF), managing business logic, role-based authorization, and state transitions.
+
+Database Layer: A PostgreSQL 16 relational database enforcing transactional integrity, relational foreign key constraints, and inventory safety.
+
+Security Layer: Stateless authentication using JSON Web Tokens (JWT) with role-based access control (RBAC).
+
+2. System Architecture & High-Level Design
+2.1 Architectural Pattern
+The application implements a decoupled Client-Server Architecture utilizing stateless RESTful APIs over HTTPS.
+
++-----------------------------------------------------------------------------------+
+|                                 PRESENTATION LAYER                                |
+|  React 19 SPA (Vite, Tailwind CSS, Axios Interceptors, React Router 7, Context)   |
++-----------------------------------------------------------------------------------+
+                                          |
+                                          | HTTPS / REST API Requests (JSON)
+                                          v
++-----------------------------------------------------------------------------------+
+|                                 APPLICATION LAYER                                 |
+|  Django 5.x REST Framework                                                        |
+|  - JWT Authentication Middleware      - CORS Middleware (django-cors-headers)     |
+|  - Role Permission Guards             - Double-Booking Prevention Engine          |
+|  - Media/Image Storage (Pillow)       - Transactional Order Services              |
++-----------------------------------------------------------------------------------+
+                                          |
+                                          | Database Queries (psycopg)
+                                          v
++-----------------------------------------------------------------------------------+
+|                                  DATABASE LAYER                                   |
+|  PostgreSQL 16 Engine                                                             |
+|  - User Credentials & Profiles        - Products, Catalog & Inventory             |
+|  - Reservations & Rental Schedules    - Orders, Payments & Review Audit Trails    |
++-----------------------------------------------------------------------------------+
+2.2 Security Architecture & Authentication Flow
+Authentication: Users submit credentials to /api/v1/auth/token/. Upon validation, DRF issues a short-lived access token (60-minute life) and a long-lived refresh token (7-day life).
+
+Authorization Header: The frontend Axios client automatically attaches the header Authorization: Bearer <access_token> to all protected outgoing requests.
+
+Token Refresh: An Axios response interceptor catches 401 Unauthorized responses, requests a new access token via /api/v1/auth/token/refresh/, and retries the failed request seamlessly.
+
+Role-Based Access Control (RBAC): Custom DRF permission classes (IsStudent, IsVerifiedStudent, IsVendor, IsAdmin) validate token claims prior to executing business logic.
+
+3. Data Design & Database Schema
+3.1 Conceptual Entity Relationship Diagram (ERD)
+ [User] 1---1 [StudentProfile] 1---N [Reservation] N---1 [Product] N---1 [VendorProfile] 1---1 [User]
+   |                                       |                     |
+   |                                       | 1                   | 1
+   |                                       v                     v
+   +----1---N [Review]                     [Order] 1---1 [Payment] [Category]
+3.2 Relational Data Models & Database Dictionary
+Table: users_user
+Stores core authentication details for all user types.
+
+Column Name	Data Type	Constraints	Description
+id	BigAutoField	PRIMARY KEY	System auto-incrementing ID
+email	EmailField(255)	UNIQUE, NOT NULL	Primary login identifier
+password	CharField(128)	NOT NULL	PBKDF2/Argon2 encrypted hash
+full_name	CharField(150)	NOT NULL	First and last legal name
+phone_number	CharField(20)	NULLABLE	Primary phone contact
+role	CharField(20)	NOT NULL, ENUM	Options: STUDENT, VENDOR, ADMIN
+is_active	BooleanField	DEFAULT True	Account status flag
+created_at	DateTimeField	AUTO_NOW_ADD	Account creation timestamp
+Table: users_studentprofile
+Extends users_user for university identification and verification.
+
+Column Name	Data Type	Constraints	Description
+id	BigAutoField	PRIMARY KEY	Profile record identifier
+user_id	OneToOne(User)	FOREIGN KEY, UNIQUE	Links to base users_user record
+university_name	CharField(150)	NOT NULL	Institution name
+student_id_num	CharField(50)	NOT NULL	Student matriculation/ID number
+id_card_image	ImageField	NOT NULL	Path to uploaded physical ID card
+is_verified	BooleanField	DEFAULT False	Flag set to True upon Admin review
+Table: users_vendorprofile
+Extends users_user for business registration.
+
+Column Name	Data Type	Constraints	Description
+id	BigAutoField	PRIMARY KEY	Vendor record identifier
+user_id	OneToOne(User)	FOREIGN KEY, UNIQUE	Links to base users_user record
+business_name	CharField(150)	NOT NULL	Registered boutique/store name
+business_address	TextField	NOT NULL	Physical store/pickup address
+is_approved	BooleanField	DEFAULT False	Admin vetting clearance status
+Table: catalog_category
+Product categorization lookup table.
+
+Column Name	Data Type	Constraints	Description
+id	BigAutoField	PRIMARY KEY	Category ID
+name	CharField(100)	UNIQUE, NOT NULL	e.g., Traditional, Formal, Ceremony
+slug	SlugField(100)	UNIQUE, NOT NULL	URL-safe string identifier
+Table: catalog_product
+Contains all attire and accessory listings available for rental or sale.
+
+Column Name	Data Type	Constraints	Description
+id	BigAutoField	PRIMARY KEY	Product ID
+vendor_id	ForeignKey(Vendor)	ON_DELETE CASCADE	Owner of the listing
+category_id	ForeignKey(Category)	ON_DELETE RESTRICT	Product category
+title	CharField(200)	NOT NULL	Product listing headline
+description	TextField	NOT NULL	Item details, materials, sizing guide
+rental_price	DecimalField(10,2)	NULLABLE	Rental fee per booking period
+purchase_price	DecimalField(10,2)	NULLABLE	Outright buy-now price
+available_stock	PositiveInteger	DEFAULT 1	Total physical inventory count
+size	CharField(20)	NOT NULL	e.g., S, M, L, XL, Custom
+status	CharField(20)	DEFAULT 'AVAILABLE'	Options: AVAILABLE, UNAVAILABLE
+Table: catalog_productimage
+Supports multiple high-resolution photos per product listing.
+
+Column Name	Data Type	Constraints	Description
+id	BigAutoField	PRIMARY KEY	Image record ID
+product_id	ForeignKey(Product)	ON_DELETE CASCADE	Linked product listing
+image	ImageField	NOT NULL	Uploaded image file path
+is_primary	BooleanField	DEFAULT False	Covers default thumbnail view
+Table: rentals_reservation
+Tracks scheduling, rental durations, and reservation states.
+
+Column Name	Data Type	Constraints	Description
+id	BigAutoField	PRIMARY KEY	Reservation ID
+student_id	ForeignKey(Student)	ON_DELETE RESTRICT	Renting student profile
+product_id	ForeignKey(Product)	ON_DELETE RESTRICT	Rented attire listing
+start_date	DateField	NOT NULL	Scheduled start date of rental
+end_date	DateField	NOT NULL	Scheduled return date of rental
+total_amount	DecimalField(10,2)	NOT NULL	Price calculated for rental duration
+status	CharField(20)	DEFAULT 'PENDING'	Options: PENDING, APPROVED, ACTIVE, RETURNED, CANCELLED
+created_at	DateTimeField	AUTO_NOW_ADD	Booking submission timestamp
+Table: orders_order
+Handles financial checkout transactions for rentals and purchases.
+
+Column Name	Data Type	Constraints	Description
+id	BigAutoField	PRIMARY KEY	Order ID
+student_id	ForeignKey(Student)	ON_DELETE RESTRICT	Buyer student profile
+order_type	CharField(20)	NOT NULL	Options: RENTAL, PURCHASE
+discount_applied	DecimalField(10,2)	DEFAULT 0.00	Student discount reduction amount
+final_amount	DecimalField(10,2)	NOT NULL	Total amount charged after discount
+payment_status	CharField(20)	DEFAULT 'UNPAID'	Options: UNPAID, PAID, REFUNDED
+created_at	DateTimeField	AUTO_NOW_ADD	Checkout generation timestamp
+Table: orders_payment
+Tracks transaction callbacks and digital receipts.
+
+Column Name	Data Type	Constraints	Description
+id	BigAutoField	PRIMARY KEY	Payment record ID
+order_id	OneToOne(Order)	ON_DELETE CASCADE	Associated purchase order
+transaction_ref	CharField(100)	UNIQUE, NOT NULL	Payment Gateway Transaction ID
+payment_method	CharField(50)	NOT NULL	e.g., Credit Card, Mobile Banking
+paid_at	DateTimeField	AUTO_NOW_ADD	Payment verification timestamp
+4. Frontend Subsystem Design
+4.1 UI Component Architecture
+The frontend is structured into modular presentation components, page views, route containers, and state handlers:
+
+src/
+├── api/
+│   ├── axiosClient.js          # Pre-configured Axios instance with JWT interceptors
+│   ├── authApi.js              # Authentication, login, registration, verification
+│   ├── catalogApi.js           # Apparel listing, filtering, detail retrieval
+│   ├── rentalApi.js            # Calendar validation, reservations, active rentals
+│   └── vendorApi.js            # Product inventory management, order fulfillment
+├── components/
+│   ├── common/                 # Reusable UI controls (Button, Input, Modal, Spinner, Badge)
+│   ├── layout/                 # MainNavbar, Sidebar, Footer, RoleHeader
+│   ├── catalog/                # ProductCard, ProductGrid, FilterSidebar, SearchBar
+│   └── rental/                 # DateRangePicker, AvailabilityCalendar, StatusBadge
+├── context/
+│   ├── AuthContext.jsx         # Global state: user object, role, verification status, tokens
+│   └── CartContext.jsx         # Active rental/purchase draft state
+├── pages/
+│   ├── public/                 # Home, ProductCatalog, ProductDetail, Unauthorized
+│   ├── auth/                   # Login, Register, StudentVerificationUpload
+│   ├── student/                # StudentDashboard, MyReservations, OrderHistory, Checkout
+│   ├── vendor/                 # VendorDashboard, ProductUpload, InventoryTable, RevenueStats
+│   └── admin/                  # AdminDashboard, PendingVendors, StudentVerificationQueue
+└── routes/
+    ├── AppRoutes.jsx           # Global route definitions
+    └── ProtectedRoute.jsx      # Guard component for Role-Based Access Control
+4.2 Application Route Mapping & Access Security
+URL Path	React Component	Access Control Guard	Primary Function
+/	HomePage	Public	Landing page showcasing categories & bundles
+/login	LoginPage	Public (Guest only)	User authentication
+/register	RegisterPage	Public (Guest only)	Account creation interface
+/catalog	ProductCatalogPage	Public	Browse, filter, and search apparel listings
+/catalog/:id	ProductDetailPage	Public	Detailed specs, photos, rental calendar
+/student/verify	StudentVerifyPage	Auth (STUDENT)	Upload University ID for discount approval
+/checkout	CheckoutPage	Auth (STUDENT, Verified)	Complete rental or purchase transaction
+/student/rentals	MyReservationsPage	Auth (STUDENT)	View active bookings, dates, and status
+/vendor/dashboard	VendorDashboardPage	Auth (VENDOR, Approved)	Overview of orders, rentals, and revenue
+/vendor/inventory	InventoryManagerPage	Auth (VENDOR, Approved)	CRUD operations for product catalog
+/admin/dashboard	AdminDashboardPage	Auth (ADMIN)	System overview and platform activity
+/admin/verifications	VerifyQueuePage	Auth (ADMIN)	Approve/reject vendor and student requests
+4.3 Key Interface Layout Wireframe Designs
+1. Student Catalog & Discovery View (/catalog)
+Designed for rapid filtering, price comparison, and verification notification.
+
++-----------------------------------------------------------------------------------+
+|  [Logo] University Attire    [Search attire...]    [Student Discount: ACTIVE]  (User)|
++-----------------------------------------------------------------------------------+
+|  CATEGORIES      |  PRODUCT CATALOG                                              |
+|  [x] Traditional |  +--------------------+  +--------------------+  +--------------+|
+|  [ ] Formal      |  | [Image Preview]    |  | [Image Preview]    |  | [Image...]   ||
+|  [ ] Ceremony    |  | Habesha Kemis      |  | Tailored Blazer    |  |              ||
+|  [ ] Accessories |  | Vendor: Silk Studio|  | Vendor: Royal Form |  |              ||
+|                  |  | Rent: $25.00/day   |  | Rent: $18.00/day   |  |              ||
+|  PRICE RANGE     |  | Buy:  $120.00      |  | Buy:  $90.00       |  |              ||
+|  [$10] --- [$150]|  | [Reserve Rental]   |  | [Reserve Rental]   |  |              ||
+|                  |  +--------------------+  +--------------------+  +--------------+|
+|  SIZE            |  Showing 1 - 12 of 48 items                 [1]  2  3  4  Next > |
+|  (S) (M) (L) (XL)|                                                                |
++-----------------------------------------------------------------------------------+
+2. Vendor Inventory & Rental Management Portal (/vendor/inventory)
+Allows vendors to track physical availability and update rental status.
+
++-----------------------------------------------------------------------------------+
+|  Vendor Portal | Boutique: Silk & Culture                  [+ Add New Product]    |
++-----------------------------------------------------------------------------------+
+|  INVENTORY LISTING                                                                |
+|  +----+------------------+-------------+--------+--------+----------+------------+|
+|  | ID | Item Name        | Category    | Rent $ | Stock  | Status   | Actions    ||
+|  +----+------------------+-------------+--------+--------+----------+------------+|
+|  | 01 | Royal Habit Gown | Ceremony    | $40/day| 3      | Active   | [Edit][Del]||
+|  | 02 | Gold Habesha Set | Traditional | $30/day| 0 (Rnt)| Booked   | [Edit][Del]||
+|  | 03 | Classic Tuxedo   | Formal      | $35/day| 5      | Active   | [Edit][Del]||
+|  +----+------------------+-------------+--------+--------+----------+------------+|
+|                                                                                   |
+|  PENDING RENTAL REQUESTS                                                          |
+|  * Student: Netsanet R. | Item: Gold Habesha Set | Dates: Oct 12 - Oct 15          |
+|    Action: [Approve Reservation]  [Reject Request]                               |
++-----------------------------------------------------------------------------------+
+5. System Subsystems & API Specifications
+5.1 Endpoint Definitions
+Subsystem 1: Authentication & Identity (/api/v1/auth/)
+POST /api/v1/auth/register/
+
+Payload: {"email": "student@univ.edu", "password": "SecretPassword123", "full_name": "Netsanet R.", "role": "STUDENT"}
+
+Response (201 Created): {"id": 12, "email": "student@univ.edu", "role": "STUDENT"}
+
+POST /api/v1/auth/token/
+
+Payload: {"email": "student@univ.edu", "password": "SecretPassword123"}
+
+Response (200 OK): {"access": "eyJhbG...", "refresh": "eyJhbG..."}
+
+POST /api/v1/auth/verify-student/ (Multipart Form)
+
+Headers: Authorization: Bearer <access_token>
+
+Payload: student_id_num="ST-8821", university_name="Addis Ababa University", id_card_image=@file.jpg
+
+Response (202 Accepted): {"status": "Verification pending admin review."}
+
+Subsystem 2: Catalog & Product Management (/api/v1/products/)
+GET /api/v1/products/
+
+Query Params: ?category=traditional&size=M&max_price=50&search=habesha
+
+Response (200 OK):
+
+JSON
+{
+  "count": 1,
+  "results": [
+    {
+      "id": 101,
+      "title": "Traditional Habesha Dress",
+      "category": "Traditional",
+      "rental_price": "30.00",
+      "purchase_price": "150.00",
+      "available_stock": 2,
+      "size": "M",
+      "primary_image": "https://cdn.site.com/media/products/dress.jpg"
+    }
+  ]
+}
+POST /api/v1/products/ (Vendor Authorized)
+
+Payload: {"title": "Graduation Blazer", "category_id": 2, "rental_price": 20.00, "available_stock": 4, "size": "L"}
+
+Response (201 Created): {"id": 102, "title": "Graduation Blazer", "status": "AVAILABLE"}
+
+Subsystem 3: Reservation & Double-Booking Prevention (/api/v1/rentals/)
+POST /api/v1/rentals/reserve/
+
+Payload: {"product_id": 101, "start_date": "2026-10-10", "end_date": "2026-10-13"}
+
+Response (201 Created): {"reservation_id": 55, "total_amount": "90.00", "status": "PENDING"}
+
+Error Response (409 Conflict): {"error": "Product is fully booked for the selected dates."}
+
+5.2 Double-Booking Prevention Logic & Transaction Rules
+To ensure an item with N physical units is not reserved by more than N students on overlapping dates, the Django backend executes an atomic availability check within a database transaction context (transaction.atomic()).
+
+Algorithm Mechanics
+For a new reservation request on product P between date ranges [S 
+new
+​
+ ,E 
+new
+​
+ ]:
+
+Query all existing active reservations (R) for product P where status is APPROVED, ACTIVE, or PENDING.
+
+Filter overlapping date conditions:
+
+Overlap Condition=(R.start_date≤E 
+new
+​
+ )AND(R.end_date≥S 
+new
+​
+ )
+Count total overlapping reserved stock:
+
+Count 
+reserved
+​
+ =∑Overlapping Records
+Validation Check:
+
+If Count 
+reserved
+​
+ ≥P.available_stock⟶Reject Reservation (409 Conflict)
+Else ⟶Create Reservation Record (201 Created)
+6. Non-Functional, Infrastructure & Deployment Requirements
+6.1 Containerized Deployment Architecture (Docker Compose)
+YAML
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: attire_postgres_db
+    environment:
+      POSTGRES_DB: attire_marketplace_db
+      POSTGRES_USER: attire_admin
+      POSTGRES_PASSWORD: SecureDatabasePassword123!
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: ./backend
+    container_name: attire_django_api
+    command: gunicorn backend.wsgi:application --bind 0.0.0.0:8000 --workers 3
+    volumes:
+      - ./backend:/app
+      - media_volume:/app/media
+    environment:
+      - DATABASE_URL=postgres://attire_admin:SecureDatabasePassword123!@db:5432/attire_marketplace_db
+      - SECRET_KEY=django-insecure-prod-key-spec
+      - DEBUG=0
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build: ./frontend
+    container_name: attire_react_web
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  media_volume:
+6.2 Security, Performance & Scalability Benchmarks
+API Response Speeds: Uncached database queries must resolve in under 200 milliseconds. Static images are compressed via Pillow upon upload to maintain catalog loading speeds under 2 seconds.
+
+CORS Security: Restrict origin requests strictly using django-cors-headers middleware to allowed client domains:
+
+Python
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "https://yourdomain.com",
+]
+Data Protection: User passwords are encrypted using Django’s default PBKDF2 password hasher with a SHA256 footprint. Sensitive JWT tokens are stored client-side in secure state, with access tokens cleared upon session expiry or logout.
+
+Database Backups: Daily automated PostgreSQL database dumps scheduled via Cron utilities to guarantee reliable system disaster recovery.

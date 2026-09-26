@@ -663,7 +663,8 @@ The system uses RESTful APIs for communication between the frontend and backend.
 ## Scalability
 
 - Support increasing numbers of users, products, and vendors without major system changes.
-
+- add mini-app and order bot
+- integrate AI helper chat bot on the web and analytics baord 
 # 10. Assumptions & Constraints
 
 ## Assumptions
@@ -680,4 +681,3 @@ The system uses RESTful APIs for communication between the frontend and backend.
 - Student discounts are available only after verification.
 - The system supports modern web browsers only.
 - Delivery management is outside the project scope.
-.

@@ -1,0 +1,8 @@
+where do the rules  agents and the workflows put and their purpose
+rule,agent and workflows and using MCP  IN antigravity workspace
+
+
+* **Rules** (`.agent/rules` or `.antigravity/rules.md`): **Global Guardrails.** Permanent coding guidelines and restrictions always loaded into memory.
+* **Agents** (Agent Manager / Runtime): **Autonomous Workers.** Executable AI instances that run terminal commands, edit code, and perform tasks in parallel.
+* **Workflows & Skills** (`.agent/skills/`): **Step-by-Step Recipes.** Loadable `SKILL.md` playbooks triggered on demand to run multi-step tasks.
+* **MCP (Model Context Protocol)** (`.mcp.json`): **External Tool Connectors.** Standardized bridges connecting agents to outside APIs, databases, or services (e.g., GitHub, Postgres).
