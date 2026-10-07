@@ -1,6 +1,10 @@
-from django.urls import path
-from .views import SubmitVerificationView
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import VerificationViewSet
+
+router = DefaultRouter()
+router.register(r'requests', VerificationViewSet, basename='verification')
 
 urlpatterns = [
-    path('submit/', SubmitVerificationView.as_view(), name='submit-verification'),
+    path('', include(router.urls)),
 ]

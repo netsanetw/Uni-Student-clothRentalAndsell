@@ -1,6 +1,6 @@
 from django.urls import path
-from .views import AdminDashboardReportView
+from .views import PlatformDashboardAnalyticsView
 
 urlpatterns = [
-    path('dashboard/', AdminDashboardReportView.as_view(), name='admin-reports'),
+    path('analytics/', PlatformDashboardAnalyticsView.as_view(), name='dashboard-analytics'),
 ]

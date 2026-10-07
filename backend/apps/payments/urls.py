@@ -1,6 +1,10 @@
-from django.urls import path
-from .views import PaymentWebhookView
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import TransactionViewSet
+
+router = DefaultRouter()
+router.register(r'history', TransactionViewSet, basename='transaction')
 
 urlpatterns = [
-    path('webhook/', PaymentWebhookView.as_view(), name='payment-webhook'),
+    path('', include(router.urls)),
 ]
